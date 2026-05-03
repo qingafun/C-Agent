@@ -1,0 +1,7 @@
+gitignore
+
+build/
+*.o
+*.exe
+c-agent
+c-agent-asan
