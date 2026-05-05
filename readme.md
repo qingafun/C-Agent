@@ -1,6 +1,6 @@
 # C-Agent
 
-A lightweight, high-performance AI Agent implemented from scratch in C. It features a robust **ReAct (Reasoning and Acting)** engine, allowing it to solve complex tasks by autonomously executing shell commands and reasoning through multi-turn feedback loops.
+A lightweight implemented from scratch in C. It features a robust **ReAct (Reasoning and Acting)** engine, allowing it to solve complex tasks by autonomously executing shell commands and reasoning through multi-turn feedback loops.
 
 ## 🌟 Key Features
 
@@ -28,7 +28,7 @@ The project is architected to separate concerns across four primary layers:
 ## 🚀 Getting Started
 
 ### 1. Prerequisites
-Ensure you have a C compiler (`gcc` or `clang`) and `make` installed. Set your environment variables:
+Ensure you have a C compiler (`gcc` or `clang`) and `make` or `CMake` installed. Set your environment variables:
 
 ```bash
 export API_KEY="your_api_key_here"
