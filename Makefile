@@ -6,7 +6,7 @@
 
 CC      ?= cc
 CFLAGS  := -D_XOPEN_SOURCE=700 -std=c11 -Wall -Wextra -pedantic -g -MMD -MP -I. -Ilibs
-LDLIBS  := -lpthread
+LDLIBS  := -lpthread -lssl -lcrypto
 
 ASAN_FLAGS := -fsanitize=address,undefined -fno-omit-frame-pointer
 
@@ -15,7 +15,7 @@ AGENT_SRCS := $(sort $(wildcard agent/*.c))
 TOOL_SRCS  := $(sort $(wildcard tools/*.c))
 UI_SRCS    := $(sort $(wildcard ui/*.c))
 
-SRCS := main.c config.c message.c util.c http.c \
+SRCS := main.c config.c message.c util.c http.c https.c\
         $(AGENT_SRCS) $(TOOL_SRCS) $(UI_SRCS)
 
 BUILD     := build
