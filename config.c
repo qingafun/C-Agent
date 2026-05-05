@@ -34,7 +34,7 @@ static int parse_env_int(const char *name, int fallback, int min_value,
 
 void config_init(void) {
   copy_env_string(g_config.model, sizeof(g_config.model), "MODEL_ID",
-                  "qwen3coder");
+                  "deepseek-chat");
   copy_env_string(g_config.llm_host, sizeof(g_config.llm_host), "LLM_HOST",
                   "127.0.0.1");
   copy_env_string(g_config.api_key, sizeof(g_config.api_key), "API_KEY",
