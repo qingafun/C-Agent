@@ -44,6 +44,13 @@ The project uses a custom Makefile for optimized incremental builds:
 make clean && make
 ```
 
+or CMake:
+
+```bash
+cmake -B build
+cmake --build build
+```
+
 ### 3. Run
 ```bash
 ./build/c-agent
