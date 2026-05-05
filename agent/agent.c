@@ -19,6 +19,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "ui/ui.h"
+
 static const char AGENT_SYSTEM_TEMPLATE[] =
     "You are a coding agent running in the CLI at %s.\n"
     "Use the provided tools when you need to run shell commands.\n"
@@ -58,8 +60,12 @@ const char *agent_chat(Agent *a, const char *user_input) {
     LLMResponse resp;
     char err[256] = {0};
 
-    // Get commands from LLM
-    if (llm_chat(&a->history, a->system_prompt, g_config.model, &resp, err, sizeof(err)) != 0) {
+    // Initialize UI
+    ui_begin_thinking(); 
+    int rc = llm_chat(&a->history, a->system_prompt, g_config.model, &resp, err, sizeof(err));
+    ui_idle(); // Wait for output
+
+    if (rc != 0) {
       fprintf(stderr, "agent_chat: llm_chat failed - %s\n", err);
       return NULL;
     }
@@ -67,12 +73,22 @@ const char *agent_chat(Agent *a, const char *user_input) {
     msg_list_push(&a->history, xstrdup(resp.raw_message));
 
     // Already get final answer.
+
+    // Return text
     if (resp.n_tool_calls == 0) {
       free(a->last_reply);
       a->last_reply = xstrdup(resp.content); 
       llm_response_free(&resp);
       return a->last_reply;
     }
+
+    // Return tools execution
+    ToolCallView *views = xmalloc(sizeof(ToolCallView) * resp.n_tool_calls);
+    for (int i = 0; i < resp.n_tool_calls; i++) {
+        views[i].name = resp.tool_calls[i].name;
+        views[i].args_display = NULL;
+    }
+    ui_begin_tools(resp.n_tool_calls, views);
 
     for (int i = 0; i < resp.n_tool_calls; i++) {
       LLMToolCall *tc = &resp.tool_calls[i];
@@ -86,6 +102,8 @@ const char *agent_chat(Agent *a, const char *user_input) {
         tr.ok = false;
         tr.output = xasprintf("Unknown tool requested: %s", tc->name);
       }
+
+      ui_tool_done(i, tr.ok, tr.output);
 
       msg_list_push(&a->history, msg_tool_json(tc->id, tr.output));
       tool_result_free(&tr);

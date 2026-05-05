@@ -18,6 +18,8 @@ int main(void) {
   }
 
   ui_init();
+  ui_start();
+  ui_banner();
 
   printf("Terminal Coding Agent Started. Type 'exit', 'quit', or 'q' to quit.\n");
 
