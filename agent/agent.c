@@ -85,8 +85,13 @@ const char *agent_chat(Agent *a, const char *user_input) {
     // Return tools execution
     ToolCallView *views = xmalloc(sizeof(ToolCallView) * resp.n_tool_calls);
     for (int i = 0; i < resp.n_tool_calls; i++) {
-        views[i].name = resp.tool_calls[i].name;
-        views[i].args_display = NULL;
+      views[i].name = resp.tool_calls[i].name;
+      cJSON *cmd_obj = cJSON_GetObjectItem(resp.tool_calls[i].args, "command");
+      if (cmd_obj && cJSON_IsString(cmd_obj) && cmd_obj->valuestring != NULL) {
+          views[i].args_display = cmd_obj->valuestring; 
+      } else {
+          views[i].args_display = NULL;
+      }
     }
     ui_begin_tools(resp.n_tool_calls, views);
 
