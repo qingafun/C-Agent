@@ -1,8 +1,4 @@
-# C-Agent: A High-Performance AI Agent in Pure C11
-
-![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
-![Language](https://img.shields.io/badge/language-C11-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
+# C-Agent
 
 A lightweight, high-performance AI Agent implemented from scratch in C. It features a robust **ReAct (Reasoning and Acting)** engine, allowing it to solve complex tasks by autonomously executing shell commands and reasoning through multi-turn feedback loops.
 
