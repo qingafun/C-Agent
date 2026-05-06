@@ -94,9 +94,6 @@ int llm_chat(const MessageList *messages, const char *system_prompt,
     }
     free(header);
     close(fd);
-  } else {
-    fprintf(stderr, "\n[INFO] HTTP connection to %s:%d failed. Triggering HTTPS fallback...\n", 
-            g_config.llm_host, (int)g_config.llm_port);
   }
 
   // Try HTTPS if HTTP failed
@@ -138,7 +135,22 @@ int llm_chat(const MessageList *messages, const char *system_prompt,
   }
 
   // JSON
-  cJSON *resp_json = cJSON_Parse(body);
+  char *json_to_parse = (char *)body;
+
+  // Check if it is chunk transfer
+  if (body[0] != '{' && body[0] != '[') {
+      char *first_newline = strstr(body, "\r\n");
+      if (first_newline) {
+          json_to_parse = first_newline + 2; // Real Json
+          
+          char *end_chunk = strstr(json_to_parse, "\r\n0\r\n\r\n");
+          if (end_chunk) {
+              *end_chunk = '\0';
+          }
+      }
+  }
+  
+  cJSON *resp_json = cJSON_Parse(json_to_parse);
   if (!resp_json) {
     snprintf(err, err_cap, "Failed to parse JSON response body");
     free(raw_resp);

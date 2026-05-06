@@ -23,7 +23,8 @@
 
 static const char AGENT_SYSTEM_TEMPLATE[] =
     "You are a coding agent running in the CLI at %s.\n"
-    "Use the provided tools when you need to run shell commands.\n"
+    "When using the 'bash' tool, you MUST provide arguments in this EXACT JSON format:\n"
+    "{\"command\": \"your_command_here\"}\n"
     "Return a short, final text reply when the task is done.";
 
 struct Agent {

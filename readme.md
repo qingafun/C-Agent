@@ -27,7 +27,13 @@ The project is architected to separate concerns across four primary layers:
 
 ## 🚀 Getting Started
 
-### 1. Prerequisites
+### 1. Clone
+```bash
+git clone https://github.com/qingafun/C-Agent.git
+cd C-Agent
+```
+
+### 2. Prerequisites
 Ensure you have a C compiler (`gcc` or `clang`) and `make` or `CMake` installed. Set your environment variables:
 
 ```bash
@@ -37,7 +43,7 @@ export LLM_HOST="127.0.0.1"
 export LLM_PORT=18080
 ```
 
-### 2. Build from Source
+### 3. Build from Source
 The project uses a custom Makefile for optimized incremental builds:
 
 ```bash
@@ -51,7 +57,7 @@ cmake -B build
 cmake --build build
 ```
 
-### 3. Run
+### 4. Run
 ```bash
 ./build/c-agent
 ```
