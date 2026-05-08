@@ -13,6 +13,7 @@
 #include "llm_client.h"
 #include "message.h"
 #include "tools/tools.h"
+#include "tools/executor.h"
 #include "util.h"
 
 #include <stdio.h>
@@ -84,36 +85,21 @@ const char *agent_chat(Agent *a, const char *user_input) {
     }
 
     // Return tools execution
-    ToolCallView *views = xmalloc(sizeof(ToolCallView) * resp.n_tool_calls);
-    for (int i = 0; i < resp.n_tool_calls; i++) {
-      views[i].name = resp.tool_calls[i].name;
-      cJSON *cmd_obj = cJSON_GetObjectItem(resp.tool_calls[i].args, "command");
-      if (cmd_obj && cJSON_IsString(cmd_obj) && cmd_obj->valuestring != NULL) {
-          views[i].args_display = cmd_obj->valuestring; 
-      } else {
-          views[i].args_display = NULL;
-      }
+    char **tool_msgs = calloc(resp.n_tool_calls, sizeof(char *));
+    char err_buf[256] = {0};
+
+    int rc_exec = executor_run_tools(resp.tool_calls, resp.n_tool_calls, tool_msgs, err_buf, sizeof(err_buf));
+    
+    if (rc_exec == 0) {
+        for (int i = 0; i < resp.n_tool_calls; i++) {
+            if (tool_msgs[i]) {
+                msg_list_push(&a->history, tool_msgs[i]);
+            }
+        }
+    } else {
+        fprintf(stderr, "agent_chat: executor failed - %s\n", err_buf);
     }
-    ui_begin_tools(resp.n_tool_calls, views);
-
-    for (int i = 0; i < resp.n_tool_calls; i++) {
-      LLMToolCall *tc = &resp.tool_calls[i];
-      ToolResult tr;
-
-      if (strcmp(tc->name, "bash") == 0) {
-        tr = bash_tool_exec(tc->args);
-      }
-      else {
-        // Unknown tools
-        tr.ok = false;
-        tr.output = xasprintf("Unknown tool requested: %s", tc->name);
-      }
-
-      ui_tool_done(i, tr.ok, tr.output);
-
-      msg_list_push(&a->history, msg_tool_json(tc->id, tr.output));
-      tool_result_free(&tr);
-    }
+    free(tool_msgs);
 
     llm_response_free(&resp);
   }

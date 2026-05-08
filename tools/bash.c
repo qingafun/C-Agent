@@ -25,12 +25,15 @@ const char *BASH_TOOL_SCHEMA =
     "\"description\":\"The shell command to execute\"}},"
     "\"required\":[\"command\"]}";
 
-void tool_result_free(ToolResult *r) {
-  if (!r)
-    return;
-  free(r->output);
-  r->output = NULL;
-}
+ToolResult bash_tool_exec(cJSON *args);
+
+ToolDef bash_def = {
+    .name = "bash",
+    .desc = "Run a shell command and return its combined stdout/stderr.",
+    .param_schema = "{\"type\":\"object\",\"properties\":{\"command\":{\"type\":\"string\",\"description\":\"The shell command to execute\"}},\"required\":[\"command\"]}",
+    .exec = bash_tool_exec,
+    .read_only = false,
+};
 
 ToolResult bash_tool_exec(cJSON *args) {
   const char *cmd = cJSON_GetStringValue(cJSON_GetObjectItem(args, "command"));

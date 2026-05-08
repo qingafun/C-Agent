@@ -6,10 +6,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "tools/tools.h"
+
 #define INPUT_BUF 4096
 
 int main(void) {
   config_init();
+  tools_init();
 
   Agent *a = agent_create();
   if (!a) {

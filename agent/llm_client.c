@@ -53,14 +53,22 @@ int llm_chat(const MessageList *messages, const char *system_prompt,
   }
 
   cJSON *tools = cJSON_AddArrayToObject(req, "tools");
-  cJSON *tool = cJSON_CreateObject();
-  cJSON_AddStringToObject(tool, "type", "function");
-  cJSON *func = cJSON_CreateObject();
-  cJSON_AddStringToObject(func, "name", BASH_TOOL_NAME);
-  cJSON_AddStringToObject(func, "description", BASH_TOOL_DESC);
-  cJSON_AddItemToObject(func, "parameters", cJSON_Parse(BASH_TOOL_SCHEMA));
-  cJSON_AddItemToObject(tool, "function", func);
-  cJSON_AddItemToArray(tools, tool);
+
+  int tool_count = 0;
+  ToolDef *const *registered_tools = tool_list(&tool_count);
+
+  for (int i = 0; i < tool_count; i++) {
+    cJSON *tool = cJSON_CreateObject();
+    cJSON_AddStringToObject(tool, "type", "function");
+      
+    cJSON *func = cJSON_CreateObject();
+    cJSON_AddStringToObject(func, "name", registered_tools[i]->name);
+    cJSON_AddStringToObject(func, "description", registered_tools[i]->desc);
+    cJSON_AddItemToObject(func, "parameters", cJSON_Parse(registered_tools[i]->param_schema));
+      
+    cJSON_AddItemToObject(tool, "function", func);
+    cJSON_AddItemToArray(tools, tool);
+  }
 
   char *req_json = cJSON_PrintUnformatted(req);
   cJSON_Delete(req);
