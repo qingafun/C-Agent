@@ -74,44 +74,9 @@ int llm_chat(const MessageList *messages, const char *system_prompt,
   cJSON_Delete(req);
 
   char *raw_resp = NULL;
-  int fallback_to_https = 1;
 
-  // Try HTTP first
-  int fd = tcp_connect(g_config.llm_host, (int)g_config.llm_port, err, err_cap);
-  if (fd >= 0) {
-    char *header = xasprintf(
-        "POST /api/v1/chat/completions HTTP/1.1\r\n"
-        "Host: %s:%d\r\n"
-        "Authorization: Bearer %s\r\n"
-        "Content-Type: application/json\r\n"
-        "Content-Length: %zu\r\n"
-        "Connection: close\r\n\r\n",
-        g_config.llm_host, (int)g_config.llm_port, g_config.api_key, strlen(req_json));
-
-    if (send_all(fd, header, strlen(header)) == 0 && send_all(fd, req_json, strlen(req_json)) == 0) {
-      size_t raw_len = 0;
-      if (recv_all(fd, LLM_TIMEOUT_SEC, &raw_resp, &raw_len, err, err_cap) == 0) {
-        int status;
-        const char *temp_body;
-        if (http_parse_response(raw_resp, &status, &temp_body) == 0 && status == 200) {
-          fallback_to_https = 0;
-        } else {
-          fprintf(stderr, "\n[INFO] HTTP attempt returned status %d. Triggering HTTPS fallback...\n", status);
-        }
-      }
-    }
-    free(header);
-    close(fd);
-  }
-
-  // Try HTTPS if HTTP failed
-  if (fallback_to_https) {
-    if (raw_resp) { free(raw_resp); raw_resp = NULL; }
-
-    const char *fallback_host = "api.deepseek.com"; 
-    int fallback_port = 443;
-    const char *endpoint = "/chat/completions"; 
-
+  if (g_config.use_https) {
+    const char *endpoint = "/api/v1/chat/completions"; 
     char *full_request = xasprintf(
         "POST %s HTTP/1.1\r\n"
         "Host: %s\r\n"
@@ -120,15 +85,45 @@ int llm_chat(const MessageList *messages, const char *system_prompt,
         "Content-Length: %zu\r\n"
         "Connection: close\r\n\r\n"
         "%s",
-        endpoint, fallback_host, g_config.api_key, strlen(req_json), req_json);
+        g_config.llm_path, g_config.llm_host, g_config.api_key, strlen(req_json), req_json);
 
-    if (https_post_request(fallback_host, fallback_port, full_request, &raw_resp) < 0) {
-      snprintf(err, err_cap, "Both HTTP and HTTPS fallback completely failed.");
+    if (https_post_request(g_config.llm_host, g_config.llm_port, full_request, &raw_resp) < 0) {
+      snprintf(err, err_cap, "HTTPS request failed (Host: %s)", g_config.llm_host);
       free(full_request);
       free(req_json);
       return -1;
     }
     free(full_request);
+  }
+  else {
+    int fd = tcp_connect(g_config.llm_host, (int)g_config.llm_port, err, err_cap);
+    if (fd < 0) {
+      free(req_json);
+      return -1;
+    }
+
+    char *header = xasprintf(
+        "POST %s HTTP/1.1\r\n"
+        "Host: %s:%d\r\n"
+        "Authorization: Bearer %s\r\n"
+        "Content-Type: application/json\r\n"
+        "Content-Length: %zu\r\n"
+        "Connection: close\r\n\r\n",
+        g_config.llm_path, g_config.llm_host, (int)g_config.llm_port, g_config.api_key, strlen(req_json));
+
+    if (send_all(fd, header, strlen(header)) != 0 || send_all(fd, req_json, strlen(req_json)) != 0) {
+      snprintf(err, err_cap, "Failed to send HTTP data");
+      free(header); close(fd); free(req_json);
+      return -1;
+    }
+
+    size_t raw_len = 0;
+    if (recv_all(fd, LLM_TIMEOUT_SEC, &raw_resp, &raw_len, err, err_cap) != 0) {
+      free(header); close(fd); free(req_json);
+      return -1;
+    }
+    free(header);
+    close(fd);
   }
 
   free(req_json);

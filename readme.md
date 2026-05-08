@@ -39,8 +39,8 @@ Ensure you have a C compiler (`gcc` or `clang`) and `make` or `CMake` installed.
 ```bash
 export API_KEY="your_api_key_here"
 export MODEL_ID="your_model_id_here"
-export LLM_HOST="127.0.0.1"
-export LLM_PORT=18080
+export LLM_HOST="your_llm_host"
+export LLM_PORT=443
 ```
 
 ### 3. Build from Source

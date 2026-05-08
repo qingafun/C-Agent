@@ -2,6 +2,7 @@
 #define CONFIG_H
 
 #include <limits.h>
+#include <stdbool.h>
 
 /*
  * Process-wide runtime configuration, derived once from environment variables.
@@ -13,6 +14,8 @@ typedef struct {
   int llm_port;
   char workdir[PATH_MAX];
   int max_tokens;
+  char llm_path[256];
+  bool use_https;
 } AgentConfig;
 
 extern AgentConfig g_config;

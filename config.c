@@ -36,12 +36,29 @@ void config_init(void) {
   copy_env_string(g_config.model, sizeof(g_config.model), "MODEL_ID",
                   "deepseek-chat");
   copy_env_string(g_config.llm_host, sizeof(g_config.llm_host), "LLM_HOST",
-                  "127.0.0.1");
+                  "api.deepseek.com");
   copy_env_string(g_config.api_key, sizeof(g_config.api_key), "API_KEY",
                   "none");
 
-  g_config.llm_port = parse_env_int("LLM_PORT", 18080, 1, 65535);
+  g_config.llm_port = parse_env_int("LLM_PORT", 443, 1, 65535);
   g_config.max_tokens = parse_env_int("MAX_TOKENS", 8000, 1, INT_MAX);
+
+  const char *env_path = getenv("LLM_PATH");
+  if (env_path && env_path[0]) {
+    snprintf(g_config.llm_path, sizeof(g_config.llm_path), "%s", env_path);
+  } else {
+    if (strcmp(g_config.llm_host, "127.0.0.1") == 0 || g_config.llm_port == 18180) {
+      strcpy(g_config.llm_path, "/api/v1/chat/completions");
+    } else {
+      strcpy(g_config.llm_path, "/v1/chat/completions");
+    }
+  }
+
+  if (g_config.llm_port == 443 || strstr(g_config.llm_host, "api.")) {
+    g_config.use_https = true;
+  } else {
+    g_config.use_https = false;
+  }
 
   /* Canonicalize so tools and logs see the same path shape. */
   if (!realpath(".", g_config.workdir)) {
