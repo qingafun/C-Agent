@@ -41,6 +41,17 @@ void msg_list_free(MessageList *ml) {
   ml->cap = 0;
 }
 
+void msg_list_trim(MessageList *ml, int max_msgs) {
+  if (ml->len <= max_msgs)
+    return;
+  int remove = ml->len - max_msgs;
+  for (int i = 0; i < remove; i++)
+    free(ml->items[i]);
+  memmove(ml->items, ml->items + remove,
+          (size_t)(ml->len - remove) * sizeof(char *));
+  ml->len -= remove;
+}
+
 char *msg_user_json(const char *content) {
   return msg_json_with_role("user", content);
 }

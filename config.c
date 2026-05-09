@@ -15,6 +15,17 @@ static void copy_env_string(char *dst, size_t cap, const char *name,
   snprintf(dst, cap, "%s", (value && value[0]) ? value : fallback);
 }
 
+static void strip_scheme(char *host) {
+  const char *schemes[] = {"https://", "http://"};
+  for (size_t i = 0; i < 2; i++) {
+    size_t len = strlen(schemes[i]);
+    if (strncmp(host, schemes[i], len) == 0) {
+      memmove(host, host + len, strlen(host + len) + 1);
+      return;
+    }
+  }
+}
+
 static int parse_env_int(const char *name, int fallback, int min_value,
                          int max_value) {
   const char *value = getenv(name);
@@ -37,6 +48,7 @@ void config_init(void) {
                   "deepseek-chat");
   copy_env_string(g_config.llm_host, sizeof(g_config.llm_host), "LLM_HOST",
                   "api.deepseek.com");
+  strip_scheme(g_config.llm_host);
   copy_env_string(g_config.api_key, sizeof(g_config.api_key), "API_KEY",
                   "none");
 

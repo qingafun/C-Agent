@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define MAX_FILE_SIZE (10 * 1024 * 1024)  /* 10 MB */
+
 static ToolResult read_exec(cJSON *args);
 
 ToolDef read_file_def = {
@@ -33,7 +35,15 @@ static ToolResult read_exec(cJSON *args) {
 
     fseek(f, 0, SEEK_END);
     long size = ftell(f);
-    fseek(f, 0, SEEK_SET);
+    rewind(f);
+
+    if (size > MAX_FILE_SIZE) {
+      fclose(f);
+      free(safe_path);
+      return (ToolResult){.ok = false,
+                          .output = xasprintf("File too large (%ld bytes, max %d)",
+                                              size, MAX_FILE_SIZE)};
+    }
 
     char *buf = xmalloc(size + 1);
     size_t read_size = fread(buf, 1, size, f);

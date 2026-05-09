@@ -3,9 +3,13 @@
 #include "util.h"
 
 #include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+
+#define MAX_FILE_SIZE (10 * 1024 * 1024)  /* 10 MB */
 
 static ToolResult edit_exec(cJSON *args);
 
@@ -37,7 +41,16 @@ static ToolResult edit_exec(cJSON *args) {
     if (!f) { free(safe_path); return (ToolResult){.ok = false, .output = xstrdup("File not found")}; }
     fseek(f, 0, SEEK_END);
     long size = ftell(f);
-    fseek(f, 0, SEEK_SET);
+    rewind(f);
+
+    if (size > MAX_FILE_SIZE) {
+      fclose(f);
+      free(safe_path);
+      return (ToolResult){.ok = false,
+                          .output = xasprintf("File too large (%ld bytes, max %d)",
+                                              size, MAX_FILE_SIZE)};
+    }
+
     char *content = xmalloc(size + 1);
     fread(content, 1, size, f);
     content[size] = '\0';
@@ -60,10 +73,33 @@ static ToolResult edit_exec(cJSON *args) {
     memcpy(new_content + prefix_len + new_len, pos + old_len, suffix_len);
     new_content[prefix_len + new_len + suffix_len] = '\0';
 
-    f = fopen(safe_path, "w");
-    if (f) {
-        fputs(new_content, f);
-        fclose(f);
+    /* Atomic write: temp file then rename. */
+    char tmp_path[PATH_MAX];
+    snprintf(tmp_path, sizeof(tmp_path), "%s.XXXXXX", safe_path);
+    int tmp_fd = mkstemp(tmp_path);
+    if (tmp_fd < 0) {
+      free(content); free(new_content); free(safe_path);
+      return (ToolResult){.ok = false,
+                          .output = xasprintf("Failed to create temp file: %s",
+                                              strerror(errno))};
+    }
+    FILE *wf = fdopen(tmp_fd, "w");
+    if (!wf) {
+      close(tmp_fd);
+      unlink(tmp_path);
+      free(content); free(new_content); free(safe_path);
+      return (ToolResult){.ok = false,
+                          .output = xstrdup("Failed to open temp file for writing")};
+    }
+    fputs(new_content, wf);
+    fclose(wf);
+
+    if (rename(tmp_path, safe_path) != 0) {
+      unlink(tmp_path);
+      free(content); free(new_content); free(safe_path);
+      return (ToolResult){.ok = false,
+                          .output = xasprintf("Failed to save %s: %s", rel_path,
+                                              strerror(errno))};
     }
 
     free(content); free(new_content); free(safe_path);

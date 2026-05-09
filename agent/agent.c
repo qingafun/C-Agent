@@ -22,6 +22,8 @@
 
 #include "ui/ui.h"
 
+#define MAX_HISTORY_MESSAGES 100
+
 static const char AGENT_SYSTEM_TEMPLATE[] =
     "You are a coding agent running in the CLI at %s.\n"
     "When using the 'bash' tool, you MUST provide arguments in this EXACT JSON format:\n"
@@ -55,6 +57,7 @@ void agent_free(Agent *a) {
 
 const char *agent_chat(Agent *a, const char *user_input) {
   msg_list_push(&a->history, msg_user_json(user_input));
+  msg_list_trim(&a->history, MAX_HISTORY_MESSAGES);
 
   int max_turns = 15;
 
@@ -98,6 +101,7 @@ const char *agent_chat(Agent *a, const char *user_input) {
         fprintf(stderr, "agent_chat: executor failed - %s\n", err_buf);
     }
     free(tool_msgs);
+    msg_list_trim(&a->history, MAX_HISTORY_MESSAGES);
 
     llm_response_free(&resp);
   }

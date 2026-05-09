@@ -20,6 +20,47 @@
 
 #define LLM_TIMEOUT_SEC 120
 
+/*
+ * Decode HTTP/1.1 chunked transfer encoding in-place.
+ * Accepts chunk extensions (ignores everything after ';').
+ * Returns pointer to the start of decoded body, sets *out_len.
+ * Returns NULL on malformed encoding; caller should fall back to raw body.
+ */
+static char *dechunk_body(char *body, size_t *out_len) {
+  char *dst = body;
+  char *src = body;
+
+  while (*src) {
+    char *end = NULL;
+    long chunk_size = strtol(src, &end, 16);
+    if (end == src || chunk_size < 0)
+      return NULL;
+
+    /* Skip extensions (e.g. ";foo=bar") and find CRLF */
+    end = strstr(end, "\r\n");
+    if (!end)
+      return NULL;
+    end += 2; /* skip \r\n */
+
+    if (chunk_size == 0) {
+      *out_len = (size_t)(dst - body);
+      return body;
+    }
+
+    memmove(dst, end, (size_t)chunk_size);
+    dst += chunk_size;
+    src = end + chunk_size;
+
+    /* Chunk data must be followed by \r\n */
+    if (src[0] == '\r' && src[1] == '\n')
+      src += 2;
+    else
+      return NULL;
+  }
+
+  return NULL;
+}
+
 void llm_response_free(LLMResponse *r) {
   if (!r) return;
   free(r->content);
@@ -141,15 +182,11 @@ int llm_chat(const MessageList *messages, const char *system_prompt,
 
   // Check if it is chunk transfer
   if (body[0] != '{' && body[0] != '[') {
-      char *first_newline = strstr(body, "\r\n");
-      if (first_newline) {
-          json_to_parse = first_newline + 2; // Real Json
-          
-          char *end_chunk = strstr(json_to_parse, "\r\n0\r\n\r\n");
-          if (end_chunk) {
-              *end_chunk = '\0';
-          }
-      }
+    size_t decoded_len = 0;
+    char *decoded = dechunk_body((char *)body, &decoded_len);
+    if (decoded)
+      json_to_parse = decoded;
+    /* If dechunk fails, fall through and try parsing body as-is */
   }
   
   cJSON *resp_json = cJSON_Parse(json_to_parse);

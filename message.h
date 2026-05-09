@@ -17,6 +17,9 @@ void msg_list_init(MessageList *ml);
 void msg_list_push(MessageList *ml, char *json); /* takes ownership */
 void msg_list_free(MessageList *ml);
 
+/* Drop the oldest messages, keeping at most `max_msgs` entries. */
+void msg_list_trim(MessageList *ml, int max_msgs);
+
 /* Construct message JSON strings (malloc'd, caller owns). */
 char *msg_user_json(const char *content);
 char *msg_tool_json(const char *tool_call_id, const char *content);
