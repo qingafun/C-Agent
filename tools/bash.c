@@ -95,6 +95,16 @@ ToolResult bash_tool_exec(cJSON *args) {
   buf[len] = '\0';
   close(pipefd[0]);
 
+  if (len > MAX_TOOL_OUTPUT) {
+    size_t head = MAX_TOOL_OUTPUT / 2;
+    size_t tail = MAX_TOOL_OUTPUT - head - 128;
+    size_t skip = len - head - tail;
+    memmove(buf + head, buf + head + skip, tail + 1);
+    memcpy(buf + head + tail, "\n\n... (output truncated)\n", 25);
+    len = head + tail + 25;
+    buf[len] = '\0';
+  }
+
   int wstatus;
   while (waitpid(pid, &wstatus, 0) == -1) {
     if (errno != EINTR) {

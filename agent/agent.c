@@ -37,9 +37,8 @@ struct Agent {
 };
 
 Agent *agent_create(void) {
-  Agent *a = calloc(1, sizeof(*a));
-  if (!a)
-    return NULL;
+  Agent *a = xmalloc(sizeof(*a));
+  memset(a, 0, sizeof(*a));
   a->system_prompt = xasprintf(AGENT_SYSTEM_TEMPLATE, g_config.workdir);
   msg_list_init(&a->history);
 

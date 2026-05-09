@@ -90,7 +90,11 @@ int llm_chat(const MessageList *messages, const char *system_prompt,
 
   for (int i = 0; i < messages->len; i++) {
     cJSON *msg = cJSON_Parse(messages->items[i]);
-    if (msg) cJSON_AddItemToArray(msgs, msg);
+    if (msg) {
+      cJSON_AddItemToArray(msgs, msg);
+    } else {
+      fprintf(stderr, "[llm] warning: failed to parse message %d, skipping\n", i);
+    }
   }
 
   cJSON *tools = cJSON_AddArrayToObject(req, "tools");

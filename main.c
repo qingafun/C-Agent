@@ -3,6 +3,7 @@
 #include "https.h"
 #include "ui/ui.h"
 
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,16 +12,20 @@
 
 #define INPUT_BUF 4096
 
+static volatile sig_atomic_t g_running = 1;
+
+static void sigint_handler(int sig) {
+  (void)sig;
+  g_running = 0;
+}
+
 int main(void) {
+  signal(SIGINT, sigint_handler);
   config_init();
   https_init();
   tools_init();
 
   Agent *a = agent_create();
-  if (!a) {
-    fprintf(stderr, "agent_create failed\n");
-    return 1;
-  }
 
   ui_init();
   ui_start();
@@ -31,13 +36,16 @@ int main(void) {
   char input[INPUT_BUF];
   int rc = 0;
 
-  while (1) {
+  while (g_running) {
     printf("> ");
     fflush(stdout);
 
     if (!fgets(input, sizeof(input), stdin)) {
-      break; 
+      break;
     }
+
+    if (!g_running)
+      break;
 
     size_t len = strlen(input);
     if (len > 0 && input[len - 1] == '\n') {
