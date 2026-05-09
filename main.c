@@ -1,5 +1,6 @@
 #include "agent/agent.h"
 #include "config.h"
+#include "https.h"
 #include "ui/ui.h"
 
 #include <stdio.h>
@@ -12,6 +13,7 @@
 
 int main(void) {
   config_init();
+  https_init();
   tools_init();
 
   Agent *a = agent_create();
@@ -63,6 +65,7 @@ int main(void) {
 
   ui_stop();
   agent_free(a);
-  
+  https_cleanup();
+
   return rc;
 }

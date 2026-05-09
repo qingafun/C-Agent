@@ -1,10 +1,10 @@
-// https.h
 #ifndef HTTPS_H
 #define HTTPS_H
 
-/*
-  For HTTPS request
- */
-int https_post_request(const char *hostname, int port, const char *http_request, char **response);
+void https_init(void);
+void https_cleanup(void);
 
-#endif // HTTPS_H
+int https_post_request(const char *hostname, int port, const char *http_request,
+                       char **response);
+
+#endif
