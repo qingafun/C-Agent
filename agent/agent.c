@@ -74,9 +74,6 @@ const char *agent_chat(Agent *a, const char *user_input) {
 
     msg_list_push(&a->history, xstrdup(resp.raw_message));
 
-    // Already get final answer.
-
-    // Return text
     if (resp.n_tool_calls == 0) {
       free(a->last_reply);
       a->last_reply = xstrdup(resp.content); 
@@ -85,7 +82,8 @@ const char *agent_chat(Agent *a, const char *user_input) {
     }
 
     // Return tools execution
-    char **tool_msgs = calloc(resp.n_tool_calls, sizeof(char *));
+    char **tool_msgs = xmalloc(resp.n_tool_calls * sizeof(char *));
+    memset(tool_msgs, 0, resp.n_tool_calls * sizeof(char *));
     char err_buf[256] = {0};
 
     int rc_exec = executor_run_tools(resp.tool_calls, resp.n_tool_calls, tool_msgs, err_buf, sizeof(err_buf));

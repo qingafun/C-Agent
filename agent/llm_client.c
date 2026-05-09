@@ -76,7 +76,6 @@ int llm_chat(const MessageList *messages, const char *system_prompt,
   char *raw_resp = NULL;
 
   if (g_config.use_https) {
-    const char *endpoint = "/api/v1/chat/completions"; 
     char *full_request = xasprintf(
         "POST %s HTTP/1.1\r\n"
         "Host: %s\r\n"
@@ -161,8 +160,26 @@ int llm_chat(const MessageList *messages, const char *system_prompt,
   }
 
   cJSON *choices = cJSON_GetObjectItem(resp_json, "choices");
+  if (!choices || !cJSON_IsArray(choices)) {
+    snprintf(err, err_cap, "Response missing 'choices' array");
+    cJSON_Delete(resp_json);
+    free(raw_resp);
+    return -1;
+  }
   cJSON *choice = cJSON_GetArrayItem(choices, 0);
+  if (!choice) {
+    snprintf(err, err_cap, "Empty 'choices' array in response");
+    cJSON_Delete(resp_json);
+    free(raw_resp);
+    return -1;
+  }
   cJSON *message = cJSON_GetObjectItem(choice, "message");
+  if (!message) {
+    snprintf(err, err_cap, "Response choice missing 'message'");
+    cJSON_Delete(resp_json);
+    free(raw_resp);
+    return -1;
+  }
 
   // Save raw assistant message
   out->raw_message = cJSON_PrintUnformatted(message);

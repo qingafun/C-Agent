@@ -38,7 +38,7 @@ int https_post_request(const char *hostname, int port, const char *http_request,
     server_addr.sin_port = htons(port);
     memcpy(&server_addr.sin_addr, host->h_addr_list[0], host->h_length);
 
-    if (connect(sock, (struct sockaddr *)&server_addr, sizeof(struct sockaddr)) != 0) {
+    if (connect(sock, (struct sockaddr *)&server_addr, sizeof(struct sockaddr_in)) != 0) {
         fprintf(stderr, "[HTTPS] TCP connect failed\n");
         close(sock);
         SSL_CTX_free(ctx);
