@@ -4,11 +4,11 @@ A lightweight implemented from scratch in C. It features a robust **ReAct (Reaso
 
 ## 🌟 Key Features
 
-- **ReAct Architecture**: A sophisticated "Thought-Action-Observation" loop that enables the LLM to interact with the local operating system.
-- **Asynchronous UI Rendering**: Implements a dedicated rendering thread via `pthread`. The UI remains fluid with smooth spinner animations even while the main thread is blocked by network I/O or heavy shell executions.
-- **Low-Level System Integration**: Leverages Linux system primitives (`fork`, `pipe`, `dup2`, `exec`) to capture stdout/stderr from subprocesses directly.
-- **Zero External Dependencies**: Built with standard C libraries and `cJSON` for maximum portability and speed.
-- **Fail-Fast Memory Management**: Robust wrappers (`xmalloc`, `xasprintf`) ensure memory safety and immediate error reporting.
+- **ReAct Architecture**: A sophisticated "Thought-Action-Observation" loop that enables the LLM to interact with the local operating system dynamically.
+- **Extensible Tool Registry**: A decoupled, static registry system that allows seamless addition of new LLM-callable tools without modifying the core reasoning loop.
+- **Parallel Execution Engine**: Leverages POSIX threads (`pthreads`) to execute batches of read-only tools concurrently, maximizing throughput while maintaining strict order invariants for the LLM context.
+- **Environment-Aware Networking**: Features heuristic protocol detection, automatically routing HTTP/HTTPS and resolving API endpoints (e.g., DeepSeek, OpenAI, Ollama) with zero-configuration required.
+- **Security-First Sandboxing**: Implements strict filesystem containment using kernel-level path canonicalization to prevent directory traversal and symlink attacks.
 
 ## 🏗️ Technical Architecture
 
@@ -21,9 +21,10 @@ The project is architected to separate concerns across four primary layers:
 
 ## 🧠 Technical Highlights
 
-- **Asynchronous UI Synchronization**: Designed a Producer-Consumer event queue using `pthread_mutex_t` and `pthread_cond_t`. This ensures the CLI spinner runs at a smooth 80ms frame rate while the main thread is blocked by synchronous TCP network reads.
-- **Safe Subprocess Management**: Utilized `fork()` and `execl()` to spawn isolated shell environments. Implemented anonymous pipes (`pipe()`) and file descriptor duplication (`dup2()`) to safely capture both `stdout` and `stderr` without terminal corruption.
-- **Memory Safety**: Custom wrappers prevent silent OOM crashes, while rigorous deep-freezing (`llm_response_free`) prevents memory leaks during long-running, multi-turn LLM conversations.
+- **Concurrency & State Isolation**: Developed a dispatcher that groups read-only tool calls (e.g., `read_file`) for parallel execution via `pthread`, while falling back to strict serial execution for state-mutating tools (e.g., `bash`, `edit_file`) to prevent race conditions.
+- **Defensive Path Sandboxing**: Bridged the gap between LLM relative paths and kernel absolute paths using a canonicalize-then-check workflow (`realpath(3)`). The sandbox safely handles non-existent write targets without introducing silent `mkdir` vulnerabilities.
+- **Asynchronous UI Synchronization**: Designed a Producer-Consumer event queue using `pthread_mutex_t` and `pthread_cond_t`. This ensures the CLI spinner runs at a smooth 80ms frame rate while the main thread is blocked by synchronous network I/O.
+- **Fail-Fast Memory Management**: Custom wrappers (`xmalloc`, `xasprintf`) prevent silent OOM crashes, while rigorous deep-freezing (`llm_response_free`) prevents memory leaks during long-running, multi-turn LLM conversations.
 
 ## 🚀 Getting Started
 
