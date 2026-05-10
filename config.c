@@ -1,11 +1,11 @@
 #include "config.h"
+#include "compat.h"
 
 #include <errno.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 AgentConfig g_config;
 
@@ -73,8 +73,8 @@ void config_init(void) {
   }
 
   /* Canonicalize so tools and logs see the same path shape. */
-  if (!realpath(".", g_config.workdir)) {
-    if (!getcwd(g_config.workdir, sizeof(g_config.workdir))) {
+  if (!fs_realpath(".", g_config.workdir)) {
+    if (!fs_getcwd(g_config.workdir, sizeof(g_config.workdir))) {
       perror("getcwd");
       exit(1);
     }

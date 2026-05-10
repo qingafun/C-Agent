@@ -5,6 +5,7 @@
  */
 #include "tools/executor.h"
 
+#include "compat.h"
 #include "message.h"
 #include "tools/tools.h"
 #include "ui/ui.h"
@@ -13,7 +14,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pthread.h>
 #include <stdbool.h>
 
 static bool g_approve_all = false;
@@ -145,14 +145,14 @@ int executor_run_tools(
     }
 
     if (can_run_parallel) {
-        pthread_t *threads = xmalloc((size_t)count * sizeof(*threads));
-        
+        thread_t *threads = xmalloc((size_t)count * sizeof(*threads));
+
         for (int i = 0; i < count; i++) {
-            pthread_create(&threads[i], NULL, thread_worker, &tasks[i]);
+            thread_create(&threads[i], thread_worker, &tasks[i]);
         }
-        
+
         for (int i = 0; i < count; i++) {
-            pthread_join(threads[i], NULL);
+            thread_join(threads[i]);
         }
         free(threads);
     } else {

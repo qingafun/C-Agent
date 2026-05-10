@@ -49,6 +49,9 @@ ToolDef *const *tool_list(int *out_count);
 
 /* ── bash ─────────────────────────────────────────── */
 
+extern ToolDef bash_def;
+extern ToolDef bash_readonly_def;
+
 /* Tool schema fields — referenced by llm_client when building the request. */
 extern const char *BASH_TOOL_NAME;
 extern const char *BASH_TOOL_DESC;

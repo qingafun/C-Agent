@@ -14,6 +14,7 @@
 #include <string.h>
 
 extern ToolDef bash_def;
+extern ToolDef bash_readonly_def;
 extern ToolDef read_file_def;
 extern ToolDef write_file_def;
 extern ToolDef edit_file_def;
@@ -26,6 +27,7 @@ void tools_init(void) {
         return;
 
     tool_register(&bash_def);
+    tool_register(&bash_readonly_def);
     tool_register(&read_file_def);
     tool_register(&write_file_def);
     tool_register(&edit_file_def);

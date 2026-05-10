@@ -17,8 +17,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/ioctl.h>
-#include <unistd.h>
 
 /* ── Output sanitization ───────────────────────────── */
 
@@ -64,13 +62,6 @@ static const char *SPINNER[] = {
 
 static double ts_diff(struct timespec a, struct timespec b) {
   return (double)(b.tv_sec - a.tv_sec) + (double)(b.tv_nsec - a.tv_nsec) / 1e9;
-}
-
-static int terminal_columns(void) {
-  struct winsize ws;
-  if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == 0 && ws.ws_col > 0)
-    return ws.ws_col;
-  return 80;
 }
 
 static void print_clipped(const char *text, int len, int max_cols) {
@@ -254,7 +245,7 @@ typedef enum { RS_IDLE, RS_THINKING, RS_TOOLS } RenderPhase;
 
 static void enter_idle(UIState *ui) {
   ui->idle_ack = true;
-  pthread_cond_broadcast(&ui->cond);
+  cond_broadcast(&ui->cond);
   esc(ESC_SHOW_CURSOR);
   fflush(stdout);
 }
@@ -266,20 +257,20 @@ void *render_thread(void *arg) {
   int frame = 0;
 
   while (1) {
-    pthread_mutex_lock(&ui->mutex);
+    mutex_lock(&ui->mutex);
 
     if (phase == RS_IDLE) {
       while (ui->head == ui->tail)
-        pthread_cond_wait(&ui->cond, &ui->mutex);
+        cond_wait(&ui->cond, &ui->mutex);
     } else {
       struct timespec ts;
-      clock_gettime(CLOCK_REALTIME, &ts);
+      clock_realtime(&ts);
       ts.tv_nsec += 80000000;
       if (ts.tv_nsec >= 1000000000) {
         ts.tv_sec++;
         ts.tv_nsec -= 1000000000;
       }
-      pthread_cond_timedwait(&ui->cond, &ui->mutex, &ts);
+      cond_timedwait(&ui->cond, &ui->mutex, &ts);
     }
 
     bool shutdown = false;
@@ -321,7 +312,7 @@ void *render_thread(void *arg) {
     }
 
     if (shutdown) {
-      pthread_mutex_unlock(&ui->mutex);
+      mutex_unlock(&ui->mutex);
       erase_dynamic(ui);
       esc(ESC_SHOW_CURSOR);
       fflush(stdout);
@@ -343,7 +334,7 @@ void *render_thread(void *arg) {
       break;
     }
 
-    pthread_mutex_unlock(&ui->mutex);
+    mutex_unlock(&ui->mutex);
   }
 
   return NULL;

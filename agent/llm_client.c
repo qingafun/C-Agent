@@ -7,6 +7,7 @@
  */
 #include "llm_client.h"
 
+#include "compat.h"
 #include "config.h"
 #include "http.h"
 #include "https.h"
@@ -16,7 +17,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 #define LLM_TIMEOUT_SEC 120
 
@@ -140,8 +140,8 @@ int llm_chat(const MessageList *messages, const char *system_prompt,
     free(full_request);
   }
   else {
-    int fd = tcp_connect(g_config.llm_host, (int)g_config.llm_port, err, err_cap);
-    if (fd < 0) {
+    socket_t fd = tcp_connect(g_config.llm_host, (int)g_config.llm_port, err, err_cap);
+    if (fd == INVALID_SOCKET_VAL) {
       free(req_json);
       return -1;
     }
@@ -157,17 +157,17 @@ int llm_chat(const MessageList *messages, const char *system_prompt,
 
     if (send_all(fd, header, strlen(header)) != 0 || send_all(fd, req_json, strlen(req_json)) != 0) {
       snprintf(err, err_cap, "Failed to send HTTP data");
-      free(header); close(fd); free(req_json);
+      free(header); socket_close(fd); free(req_json);
       return -1;
     }
 
     size_t raw_len = 0;
     if (recv_all(fd, LLM_TIMEOUT_SEC, &raw_resp, &raw_len, err, err_cap) != 0) {
-      free(header); close(fd); free(req_json);
+      free(header); socket_close(fd); free(req_json);
       return -1;
     }
     free(header);
-    close(fd);
+    socket_close(fd);
   }
 
   free(req_json);

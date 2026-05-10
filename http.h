@@ -1,6 +1,7 @@
 #ifndef HTTP_H
 #define HTTP_H
 
+#include "compat.h"
 #include <stddef.h>
 
 /*
@@ -28,22 +29,16 @@
  * Returns:
  *   Socket file descriptor on success, -1 on failure (err is populated)
  */
-int tcp_connect(const char *host, int port, char *err, size_t err_cap);
+socket_t tcp_connect(const char *host, int port, char *err, size_t err_cap);
 
 /*
  * Send all bytes from a buffer over a socket.
  *
  * Handles partial writes automatically (loops until all data sent or error).
  *
- * Parameters:
- *   fd  - Connected socket file descriptor
- *   buf - Data buffer to send
- *   len - Number of bytes to send
- *
- * Returns:
- *   0 on success, -1 on error
+ * Returns 0 on success, -1 on error.
  */
-int send_all(int fd, const void *buf, size_t len);
+int send_all(socket_t fd, const void *buf, size_t len);
 
 /*
  * Read all data from a socket until the peer closes the connection.
@@ -51,19 +46,10 @@ int send_all(int fd, const void *buf, size_t len);
  * Uses SO_RCVTIMEO to enforce a timeout on each recv() call. The received
  * data is stored in a dynamically allocated, NUL-terminated buffer.
  *
- * Parameters:
- *   fd         - Connected socket file descriptor
- *   timeout_sec- Read timeout in seconds (0 = no timeout)
- *   out        - Output pointer for allocated buffer (caller must free)
- *   out_len    - Output pointer for buffer size
- *   err        - Buffer for error message on failure
- *   err_cap    - Capacity of error buffer
- *
- * Returns:
- *   0 on success, -1 on error
+ * Returns 0 on success, -1 on error.
  */
-int recv_all(int fd, int timeout_sec, char **out, size_t *out_len, char *err,
-             size_t err_cap);
+int recv_all(socket_t fd, int timeout_sec, char **out, size_t *out_len,
+             char *err, size_t err_cap);
 
 /*
  * Parse an HTTP response in-place.

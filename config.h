@@ -1,6 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#include "compat.h"
 #include <limits.h>
 #include <stdbool.h>
 

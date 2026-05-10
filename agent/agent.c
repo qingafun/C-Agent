@@ -31,6 +31,7 @@ static const char AGENT_SYSTEM_TEMPLATE[] =
     "When using the 'bash' tool, you MUST provide arguments in this EXACT "
     "JSON format:\n"
     "{\"command\": \"your_command_here\"}\n"
+    "Prefer bash_readonly over bash for read-only commands.\n"
     "Return a short, final text reply when the task is done.";
 
 struct Agent {

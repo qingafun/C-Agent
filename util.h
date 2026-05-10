@@ -9,6 +9,7 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#include "compat.h"
 #include <stddef.h>
 
 void *xmalloc(size_t size);
@@ -16,6 +17,6 @@ void *xrealloc(void *ptr, size_t size);
 char *xstrdup(const char *s);
 
 /* Like asprintf but exits on failure. Never returns NULL. */
-char *xasprintf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+char *xasprintf(const char *fmt, ...) ATTR_PRINTF(1, 2);
 
 #endif

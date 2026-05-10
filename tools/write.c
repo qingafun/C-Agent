@@ -1,5 +1,6 @@
 #include "tools/tools.h"
 #include "tools/sandbox.h"
+#include "compat.h"
 #include "util.h"
 
 #include <errno.h>
@@ -7,7 +8,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 static ToolResult write_exec(cJSON *args);
 
@@ -34,17 +34,17 @@ static ToolResult write_exec(cJSON *args) {
     /* Atomic write: write to temp file in same directory, then rename. */
     char tmp_path[PATH_MAX];
     snprintf(tmp_path, sizeof(tmp_path), "%s.XXXXXX", safe_path);
-    int tmp_fd = mkstemp(tmp_path);
+    int tmp_fd = fs_mkstemp(tmp_path);
     if (tmp_fd < 0) {
       free(safe_path);
       return (ToolResult){.ok = false,
                           .output = xasprintf("Failed to create temp file: %s",
                                               strerror(errno))};
     }
-    FILE *f = fdopen(tmp_fd, "w");
+    FILE *f = fs_fdopen(tmp_fd, "w");
     if (!f) {
-      close(tmp_fd);
-      unlink(tmp_path);
+      fs_close(tmp_fd);
+      fs_unlink(tmp_path);
       free(safe_path);
       return (ToolResult){.ok = false, .output = xstrdup("Failed to open temp file")};
     }
@@ -53,7 +53,7 @@ static ToolResult write_exec(cJSON *args) {
     fclose(f);
 
     if (rename(tmp_path, safe_path) != 0) {
-      unlink(tmp_path);
+      fs_unlink(tmp_path);
       free(safe_path);
       return (ToolResult){.ok = false,
                           .output = xasprintf("Failed to save %s: %s", rel_path,

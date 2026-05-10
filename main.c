@@ -1,4 +1,5 @@
 #include "agent/agent.h"
+#include "compat.h"
 #include "config.h"
 #include "https.h"
 #include "ui/ui.h"
@@ -20,6 +21,10 @@ static void sigint_handler(int sig) {
 }
 
 int main(void) {
+  if (net_init() != 0) {
+    fprintf(stderr, "Fatal: network init failed\n");
+    return 1;
+  }
   signal(SIGINT, sigint_handler);
   config_init();
   https_init();
@@ -74,6 +79,7 @@ int main(void) {
   ui_stop();
   agent_free(a);
   https_cleanup();
+  net_cleanup();
 
   return rc;
 }

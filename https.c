@@ -1,12 +1,9 @@
-#define _XOPEN_SOURCE 700
+#include "compat.h"
+
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
 
 #include <openssl/ssl.h>
 #include <openssl/err.h>
@@ -16,9 +13,13 @@
 static SSL_CTX *g_ssl_ctx = NULL;
 
 void https_init(void) {
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+  OPENSSL_init_ssl(0, NULL);
+#else
   SSL_library_init();
   OpenSSL_add_all_algorithms();
   SSL_load_error_strings();
+#endif
   g_ssl_ctx = SSL_CTX_new(TLS_client_method());
   if (!g_ssl_ctx)
     fprintf(stderr, "[HTTPS] Unable to create SSL context\n");
@@ -48,23 +49,23 @@ int https_post_request(const char *hostname, int port, const char *http_request,
     return -1;
   }
 
-  int sock = socket(res->ai_family, res->ai_socktype, 0);
-  if (sock < 0) {
+  socket_t sock = socket(res->ai_family, res->ai_socktype, 0);
+  if (sock == INVALID_SOCKET_VAL) {
     fprintf(stderr, "[HTTPS] socket creation failed\n");
     freeaddrinfo(res);
     return -1;
   }
 
-  if (connect(sock, res->ai_addr, res->ai_addrlen) != 0) {
+  if (connect(sock, res->ai_addr, (int)res->ai_addrlen) != 0) {
     fprintf(stderr, "[HTTPS] TCP connect failed\n");
-    close(sock);
+    socket_close(sock);
     freeaddrinfo(res);
     return -1;
   }
   freeaddrinfo(res);
 
   SSL *ssl = SSL_new(g_ssl_ctx);
-  SSL_set_fd(ssl, sock);
+  SSL_set_fd(ssl, (int)sock);
   SSL_set_tlsext_host_name(ssl, hostname);
 
   if (SSL_connect(ssl) <= 0) {
@@ -73,7 +74,7 @@ int https_post_request(const char *hostname, int port, const char *http_request,
     goto cleanup;
   }
 
-  if (SSL_write(ssl, http_request, strlen(http_request)) <= 0) {
+  if (SSL_write(ssl, http_request, (int)strlen(http_request)) <= 0) {
     fprintf(stderr, "[HTTPS] SSL write failed\n");
     goto cleanup;
   }
@@ -94,14 +95,13 @@ int https_post_request(const char *hostname, int port, const char *http_request,
       }
       res_buf = new_buf;
     }
-    int bytes = SSL_read(ssl, res_buf + received, capacity - received - 1);
+    int bytes = SSL_read(ssl, res_buf + received, (int)(capacity - received - 1));
     if (bytes > 0) {
-      received += bytes;
+      received += (size_t)bytes;
       continue;
     }
     if (bytes == 0)
       break;
-    /* Retry on EINTR or WANT_READ; otherwise treat as error. */
     int ssl_err = SSL_get_error(ssl, bytes);
     if (ssl_err == SSL_ERROR_WANT_READ || ssl_err == SSL_ERROR_WANT_WRITE)
       continue;
@@ -120,6 +120,6 @@ cleanup:
     SSL_shutdown(ssl);
     SSL_free(ssl);
   }
-  close(sock);
+  socket_close(sock);
   return (*response != NULL) ? 0 : -1;
 }

@@ -2,8 +2,8 @@
 #define UI_INTERNAL_H
 
 #include "ui/ui.h"
+#include "compat.h"
 
-#include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <time.h>
@@ -71,10 +71,10 @@ typedef struct {
   UIEvent events[EVENT_QUEUE_SIZE];
   int head;
   int tail;
-  pthread_mutex_t mutex;
-  pthread_cond_t cond;
+  mutex_t mutex;
+  cond_t cond;
 
-  pthread_t render_tid;
+  thread_t render_tid;
   bool active;
   int lines_drawn;
   bool idle_ack;

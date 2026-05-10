@@ -1,17 +1,14 @@
 #include "http.h"
+#include "compat.h"
 
 #include "util.h"
 
 #include <errno.h>
-#include <netdb.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
-#include <sys/time.h>
-#include <unistd.h>
 
-int tcp_connect(const char *host, int port, char *err, size_t err_cap) {
+socket_t tcp_connect(const char *host, int port, char *err, size_t err_cap) {
   char port_buf[16];
   snprintf(port_buf, sizeof(port_buf), "%d", port);
 
@@ -19,34 +16,34 @@ int tcp_connect(const char *host, int port, char *err, size_t err_cap) {
   struct addrinfo *res = NULL;
   if (getaddrinfo(host, port_buf, &hints, &res) != 0 || !res) {
     snprintf(err, err_cap, "cannot resolve host %s", host);
-    return -1;
+    return INVALID_SOCKET_VAL;
   }
 
-  int fd = socket(res->ai_family, res->ai_socktype, 0);
-  if (fd < 0) {
+  socket_t fd = socket(res->ai_family, res->ai_socktype, 0);
+  if (fd == INVALID_SOCKET_VAL) {
     snprintf(err, err_cap, "socket: %s", strerror(errno));
     freeaddrinfo(res);
-    return -1;
+    return INVALID_SOCKET_VAL;
   }
 
-  if (connect(fd, res->ai_addr, res->ai_addrlen) < 0) {
+  if (connect(fd, res->ai_addr, (int)res->ai_addrlen) < 0) {
     snprintf(err, err_cap, "connect: %s", strerror(errno));
-    close(fd);
+    socket_close(fd);
     freeaddrinfo(res);
-    return -1;
+    return INVALID_SOCKET_VAL;
   }
 
   freeaddrinfo(res);
   return fd;
 }
 
-int send_all(int fd, const void *buf, size_t len) {
+int send_all(socket_t fd, const void *buf, size_t len) {
   const char *p = buf;
   size_t sent = 0;
   while (sent < len) {
-    ssize_t n = send(fd, p + sent, len - sent, 0);
+    int n = (int)send(fd, p + sent, (int)(len - sent), 0);
     if (n < 0) {
-      if (errno == EINTR)
+      if (socket_errno() == SOCKET_EINTR)
         continue;
       return -1;
     }
@@ -57,11 +54,10 @@ int send_all(int fd, const void *buf, size_t len) {
   return 0;
 }
 
-int recv_all(int fd, int timeout_sec, char **out, size_t *out_len, char *err,
-             size_t err_cap) {
+int recv_all(socket_t fd, int timeout_sec, char **out, size_t *out_len,
+             char *err, size_t err_cap) {
   if (timeout_sec > 0) {
-    struct timeval tv = {.tv_sec = timeout_sec};
-    if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) != 0) {
+    if (socket_set_timeout(fd, timeout_sec) != 0) {
       snprintf(err, err_cap, "setsockopt: %s", strerror(errno));
       return -1;
     }
@@ -76,14 +72,15 @@ int recv_all(int fd, int timeout_sec, char **out, size_t *out_len, char *err,
       cap *= 2;
       buf = xrealloc(buf, cap);
     }
-    ssize_t n = recv(fd, buf + len, cap - len - 1, 0);
+    int n = (int)recv(fd, buf + len, (int)(cap - len - 1), 0);
     if (n < 0) {
-      if (errno == EINTR)
+      int e = socket_errno();
+      if (e == SOCKET_EINTR)
         continue;
-      if (errno == EAGAIN || errno == EWOULDBLOCK)
+      if (e == SOCKET_EAGAIN)
         snprintf(err, err_cap, "recv timed out (%ds)", timeout_sec);
       else
-        snprintf(err, err_cap, "recv: %s", strerror(errno));
+        snprintf(err, err_cap, "recv: error %d", e);
       free(buf);
       return -1;
     }
