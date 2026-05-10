@@ -36,13 +36,64 @@ git clone https://github.com/qingafun/C-Agent.git
 cd C-Agent
 ```
 
-### 2. Prerequisites
+### 2. Install Dependencies
 
-- C11 compiler (`gcc`, `clang`, or MSVC)
-- `CMake` 3.10+ (recommended), or `make`
-- OpenSSL (optional on Windows, required on Linux)
+#### Linux (Ubuntu/Debian)
 
-**Environment variables:**
+```bash
+sudo apt update
+sudo apt install -y build-essential cmake libssl-dev
+```
+
+| Package | Purpose |
+|---------|---------|
+| `build-essential` | gcc, g++, make |
+| `cmake` | Build system (≥3.10) |
+| `libssl-dev` | OpenSSL headers/libs for HTTPS |
+
+#### Linux (Fedora/RHEL)
+
+```bash
+sudo dnf install -y gcc gcc-c++ cmake make openssl-devel
+```
+
+#### Linux (Arch)
+
+```bash
+sudo pacman -S --noconfirm gcc cmake make openssl
+```
+
+#### Windows
+
+**Option A — MSVC + vcpkg (Recommended)**
+
+```powershell
+# 1. Install Visual Studio 2022 with "Desktop development with C++" workload
+#    Download: https://visualstudio.microsoft.com/downloads/
+
+# 2. Install CMake (if not bundled with VS)
+winget install Kitware.CMake
+
+# 3. Install vcpkg
+git clone https://github.com/Microsoft/vcpkg.git C:\vcpkg
+cd C:\vcpkg
+.\bootstrap-vcpkg.bat
+
+# 4. Install OpenSSL via vcpkg (×64)
+.\vcpkg install openssl:x64-windows
+
+# 5. Tell CMake where vcpkg lives
+$env:CMAKE_TOOLCHAIN_FILE="C:\vcpkg\scripts\buildsystems\vcpkg.cmake"
+```
+
+**Option B — MinGW-w64 + MSYS2**
+
+```bash
+# In MSYS2 terminal:
+pacman -S --noconfirm mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-make mingw-w64-x86_64-openssl
+```
+
+### 3. Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -53,7 +104,7 @@ cd C-Agent
 | `MAX_TOKENS` | `8000` | Maximum tokens per response |
 | `LLM_PATH` | auto | API endpoint path |
 
-### 3. Build from Source
+### 4. Build from Source
 
 **Linux:**
 ```bash
@@ -61,18 +112,26 @@ cmake -B build
 cmake --build build
 ```
 
-**Windows (MSVC):**
+**Windows (MSVC + vcpkg):**
 ```powershell
+cmake -B build -DCMAKE_TOOLCHAIN_FILE="C:\vcpkg\scripts\buildsystems\vcpkg.cmake"
+cmake --build build
+```
+
+**Windows (MSVC without vcpkg):**
+```powershell
+# OpenSSL won't be found; HTTPS support will be disabled (warning is expected)
 cmake -B build
 cmake --build build
 ```
 
-**Alternatively with Make (Linux only):**
+**Windows (MinGW / MSYS2):**
 ```bash
-make clean && make
+cmake -B build -G "MinGW Makefiles"
+cmake --build build
 ```
 
-### 4. Run
+### 5. Run
 
 **Linux:**
 ```bash
