@@ -76,12 +76,19 @@ make clean && make
 
 **Linux:**
 ```bash
-API_KEY="sk-xxx" ./build/c-agent
+export API_KEY="your_api_key_here"
+export MODEL_ID="your_model_id_here"
+export LLM_HOST="your_llm_host"
+export LLM_PORT=443
+./build/c-agent
 ```
 
 **Windows (PowerShell):**
 ```powershell
-$env:API_KEY="sk-xxx"
+$env:API_KEY="your_api_key_here"
+$env:MODEL_ID="your_model_id_here"
+$env:LLM_HOST="your_llm_host"
+$env:LLM_PORT=443
 .\build\Debug\c-agent.exe
 ```
 
