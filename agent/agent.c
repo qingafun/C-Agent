@@ -25,8 +25,11 @@
 #define MAX_HISTORY_MESSAGES 100
 
 static const char AGENT_SYSTEM_TEMPLATE[] =
-    "You are a coding agent running in the CLI at %s.\n"
-    "When using the 'bash' tool, you MUST provide arguments in this EXACT JSON format:\n"
+    "You are a coding agent running in the CLI. Your workspace is %s.\n"
+    "All read_file/write_file/edit_file path arguments MUST be relative to "
+    "the workspace root. Absolute paths (starting with /) are rejected.\n"
+    "When using the 'bash' tool, you MUST provide arguments in this EXACT "
+    "JSON format:\n"
     "{\"command\": \"your_command_here\"}\n"
     "Return a short, final text reply when the task is done.";
 
