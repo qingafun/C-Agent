@@ -78,6 +78,22 @@ static char *read_pipe_data(char *(*read_fn)(void *ctx, size_t *len), void *ctx)
 
 #ifdef _WIN32
 
+#include <wchar.h>
+
+/* Convert child process output from OEM code page (e.g., GBK) to UTF-8.
+   Returns a malloc'd string the caller must free. */
+static char *oem_to_utf8(const char *input) {
+  int wlen = MultiByteToWideChar(CP_OEMCP, 0, input, -1, NULL, 0);
+  if (wlen <= 0) return xstrdup(input);
+  wchar_t *wbuf = xmalloc(wlen * sizeof(wchar_t));
+  MultiByteToWideChar(CP_OEMCP, 0, input, -1, wbuf, wlen);
+  int ulen = WideCharToMultiByte(CP_UTF8, 0, wbuf, -1, NULL, 0, NULL, NULL);
+  char *ubuf = xmalloc(ulen);
+  WideCharToMultiByte(CP_UTF8, 0, wbuf, -1, ubuf, ulen, NULL, NULL);
+  free(wbuf);
+  return ubuf;
+}
+
 typedef struct {
   HANDLE hRead;
 } pipe_ctx_t;
@@ -159,6 +175,13 @@ ToolResult bash_tool_exec(cJSON *args) {
   pipe_ctx_t ctx = {hChildOutRd};
   char *output = read_pipe_data(win_read_chunk, &ctx);
   CloseHandle(hChildOutRd);
+
+  /* Convert child-process output from system code page (e.g., GBK) to UTF-8 */
+  {
+    char *utf8 = oem_to_utf8(output);
+    free(output);
+    output = utf8;
+  }
 
   DWORD exit_code = 1;
   WaitForSingleObject(pi.hProcess, INFINITE);

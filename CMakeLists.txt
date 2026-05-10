@@ -34,7 +34,7 @@ if(WIN32)
 
   # MSVC-specific flags
   if(MSVC)
-    target_compile_options(c-agent PRIVATE /W4)
+    target_compile_options(c-agent PRIVATE /W4 /utf-8)
     target_compile_definitions(c-agent PRIVATE _CRT_SECURE_NO_WARNINGS)
   else()
     # MinGW / clang on Windows

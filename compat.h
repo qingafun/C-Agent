@@ -28,6 +28,7 @@
 #include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <fcntl.h>
 #include <io.h>
 #include <process.h>
 #include <direct.h>
@@ -51,6 +52,10 @@ static inline int socket_set_timeout(socket_t fd, int timeout_sec) {
 }
 
 /* ── File helpers ────────────────────────────────────── */
+
+#define STDIN_FILENO  0
+#define STDOUT_FILENO 1
+#define STDERR_FILENO 2
 
 #define fs_close(fd)        _close(fd)
 #define fs_unlink(path)     _unlink(path)
@@ -102,6 +107,8 @@ static inline int terminal_columns(void) {
 /* ── ANSI escape support ──────────────────────────────── */
 
 static inline void terminal_enable_ansi(void) {
+  SetConsoleCP(CP_UTF8);
+  SetConsoleOutputCP(CP_UTF8);
   HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
   if (h) {
     DWORD mode;
