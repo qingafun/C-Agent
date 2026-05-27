@@ -17,6 +17,9 @@ typedef struct {
   int max_tokens;
   char llm_path[256];
   bool use_https;
+  int context_window;
+  float offload_threshold;
+  float summary_threshold;
 } AgentConfig;
 
 extern AgentConfig g_config;

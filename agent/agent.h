@@ -3,8 +3,9 @@
 
 typedef struct Agent Agent;
 
-Agent *agent_create(void);
+Agent *agent_create(int context_window);
 void agent_free(Agent *a);
+struct Context *agent_get_context(Agent *a);
 
 /*
  * Run one "turn": send user_input to the LLM, execute any tool it asks for,

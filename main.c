@@ -29,8 +29,28 @@ int main(void) {
   config_init();
   https_init();
   tools_init();
+  session_log_init();
 
-  Agent *a = agent_create();
+  Agent *a = agent_create(g_config.context_window);
+  session_set_context(agent_get_context(a));
+
+  if (session_has_pending()) {
+    printf("Found previous session. Resume? [Y/n]: ");
+    fflush(stdout);
+    char answer[16];
+    if (fgets(answer, sizeof(answer), stdin)) {
+      char c = answer[0];
+      if (c == 'n' || c == 'N') {
+        printf("Starting a new session.\n");
+        char path[PATH_MAX + 256];
+        snprintf(path, sizeof(path), "%s/.agent/sessions/current.jsonl",
+                 g_config.workdir);
+        remove(path);
+      } else {
+        session_replay();
+      }
+    }
+  }
 
   ui_init();
   ui_start();
@@ -66,17 +86,18 @@ int main(void) {
     }
 
     const char *reply = agent_chat(a, input);
-    
+
     if (reply) {
       printf("%s\n", reply);
     }
     else {
       rc = 1;
-      break; 
+      break;
     }
   }
 
   ui_stop();
+  session_log_close();
   agent_free(a);
   https_cleanup();
   net_cleanup();

@@ -18,6 +18,13 @@ extern ToolDef bash_readonly_def;
 extern ToolDef read_file_def;
 extern ToolDef write_file_def;
 extern ToolDef edit_file_def;
+extern ToolDef load_skill_def;
+extern ToolDef save_memory_def;
+extern ToolDef read_memory_def;
+extern ToolDef save_session_def;
+extern ToolDef load_session_def;
+extern ToolDef list_sessions_def;
+extern ToolDef run_subagent_def;
 
 static ToolDef *g_tools[MAX_REGISTERED_TOOLS];
 static int g_tools_count = 0;
@@ -31,6 +38,13 @@ void tools_init(void) {
     tool_register(&read_file_def);
     tool_register(&write_file_def);
     tool_register(&edit_file_def);
+    tool_register(&load_skill_def);
+    tool_register(&save_memory_def);
+    tool_register(&read_memory_def);
+    tool_register(&save_session_def);
+    tool_register(&load_session_def);
+    tool_register(&list_sessions_def);
+    tool_register(&run_subagent_def);
 }
 
 void tool_register(ToolDef *def) {

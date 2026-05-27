@@ -11,12 +11,13 @@ LDLIBS  := -lpthread -lssl -lcrypto
 ASAN_FLAGS := -fsanitize=address,undefined -fno-omit-frame-pointer
 
 # Source files discovery
-AGENT_SRCS := $(sort $(wildcard agent/*.c))
-TOOL_SRCS  := $(sort $(wildcard tools/*.c))
-UI_SRCS    := $(sort $(wildcard ui/*.c))
+AGENT_SRCS   := $(sort $(wildcard agent/*.c))
+TOOL_SRCS    := $(sort $(wildcard tools/*.c))
+UI_SRCS      := $(sort $(wildcard ui/*.c))
+CONTEXT_SRCS := $(sort $(wildcard context/*.c))
 
 SRCS := main.c config.c message.c util.c http.c https.c\
-        $(AGENT_SRCS) $(TOOL_SRCS) $(UI_SRCS)
+        $(AGENT_SRCS) $(TOOL_SRCS) $(UI_SRCS) $(CONTEXT_SRCS)
 
 BUILD     := build
 OBJS      := $(SRCS:%.c=$(BUILD)/%.o) $(BUILD)/cJSON.o

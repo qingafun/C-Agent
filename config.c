@@ -54,6 +54,18 @@ void config_init(void) {
 
   g_config.llm_port = parse_env_int("LLM_PORT", 443, 1, 65535);
   g_config.max_tokens = parse_env_int("MAX_TOKENS", 8000, 1, INT_MAX);
+  g_config.context_window = parse_env_int("CONTEXT_WINDOW", 64000, 100, INT_MAX);
+
+  {
+    const char *v = getenv("OFFLOAD_THRESHOLD");
+    g_config.offload_threshold =
+        (v && v[0]) ? (float)atof(v) : 0.5f;
+  }
+  {
+    const char *v = getenv("SUMMARY_THRESHOLD");
+    g_config.summary_threshold =
+        (v && v[0]) ? (float)atof(v) : 0.7f;
+  }
 
   const char *env_path = getenv("LLM_PATH");
   if (env_path && env_path[0]) {
